@@ -17,7 +17,6 @@ public class Poker extends JLabel{
         this.setSize(71,96);
         //把牌显示出来
         this.setVisible(true);
-
     }
 
     //显示正面
@@ -43,5 +42,4 @@ public class Poker extends JLabel{
     public void setName(String name) {
         this.name = name;
     }
-
 }

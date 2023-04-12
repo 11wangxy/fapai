@@ -21,7 +21,7 @@ public class Common {
                 poker.setLocation(i, (int) y);
 
                 try {
-                    Thread.sleep(5);
+                    Thread.sleep(8);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
