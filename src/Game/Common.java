@@ -28,7 +28,6 @@ public class Common {
             }
         }
         poker.setLocation(to);
-
     }
 
     //重新摆放牌
