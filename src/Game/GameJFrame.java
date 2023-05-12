@@ -2,13 +2,13 @@ package Game;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-public class GameJFrame extends JFrame implements ActionListener {
+public class GameJFrame extends JFrame  {
     //获取界面中的隐藏容器，现在统一获取了，后面直接用就可以了
     public static Container container = null;
     //集合嵌套集合
@@ -22,7 +22,8 @@ public class GameJFrame extends JFrame implements ActionListener {
     ArrayList<Poker> lordList = new ArrayList<>();
     //牌盒，装所有的牌
     ArrayList<Poker> pokerList = new ArrayList();
-    public GameJFrame() throws Exception{
+
+    public GameJFrame() throws Exception {
         //设置界面
         initJframe();
         //界面显示出来
@@ -31,24 +32,24 @@ public class GameJFrame extends JFrame implements ActionListener {
         //初始化牌
         //准备牌，洗牌，发牌，排序
         initCard();
-
     }
+
     //初始化牌（准备牌，洗牌，发牌，排序）
     public void initCard() {
         //准备牌
         //把所有的牌，包括大小王都添加到牌盒pokerList当中
-        for (int i = 1; i <= 5; i++) {//花色
-            for (int j = 1; j <= 13; j++) {
+        IntStream.rangeClosed(1, 5).forEach(i -> {
+            IntStream.rangeClosed(1, 13).forEach(j -> {
                 if ((i == 5) && (j > 2)) {
-                    break;
-                } else {
-                    Poker poker = new Poker(i + "-" + j, false);
-                    poker.setLocation(350, 150);
-                    pokerList.add(poker);
-                    container.add(poker);
+                    return;
                 }
-            }
-        }
+                Poker poker = new Poker(i + "-" + j, false);
+                poker.setLocation(350, 150);
+                pokerList.add(poker);
+                container.add(poker);
+            });
+        });
+
         //洗牌
         Collections.shuffle(pokerList);
 
@@ -58,32 +59,28 @@ public class GameJFrame extends JFrame implements ActionListener {
         ArrayList<Poker> player2 = new ArrayList<>();
 
         //发牌
-        for (int i = 0; i < pokerList.size(); i++) {
-            //获取当前遍历的牌
-            Poker poker = pokerList.get(i);
-
+        pokerList.forEach(poker -> {
             //发三张底牌
-            if (i <= 2) {
+            if (lordList.size() <= 2) {
                 //把底牌添加到集合中
                 lordList.add(poker);
-                Common.move(poker, poker.getLocation(), new Point(270 + (75 * i), 10));
-                continue;
+                Common.move(poker, poker.getLocation(), new Point(270 + (75 * (lordList.size() - 1)), 10));
+                return;
             }
 
             //给三个玩家发牌
-            if (i % 3 == 0) {
+            if (pokerList.indexOf(poker) % 3 == 0) {
                 //给左边的电脑发牌
-                Common.move(poker, poker.getLocation(), new Point(50, 60 + i * 5));
+                Common.move(poker, poker.getLocation(), new Point(50, 60 + pokerList.indexOf(poker) * 5));
                 player0.add(poker);
-            } else if (i % 3 == 1) {
+            } else if (pokerList.indexOf(poker) % 3 == 1) {
                 //给中间的自己发牌
-                Common. move(poker, poker.getLocation(), new Point(180 + i * 7, 450));
+                Common.move(poker, poker.getLocation(), new Point(180 + pokerList.indexOf(poker) * 7, 450));
                 player1.add(poker);
-                //把自己的牌展示正面
                 poker.turnFront();
-            } else if (i % 3 == 2) {
+            } else if (pokerList.indexOf(poker) % 3 == 2) {
                 //给右边的电脑发牌
-                Common. move(poker, poker.getLocation(), new Point(700, 60 + i * 5));
+                Common.move(poker, poker.getLocation(), new Point(700, 60 + pokerList.indexOf(poker) * 5));
                 player2.add(poker);
             }
 
@@ -92,22 +89,19 @@ public class GameJFrame extends JFrame implements ActionListener {
             playerList.add(player1);
             playerList.add(player2);
 
-            //把当前的牌至于最顶端，这样就会有牌依次错开且叠起来的效果这段代码的作用是将一个名为poker的组件放置在容器的第0层，也就是最底层。
-            //在容器中存在多个组件时，通过设置组件的Z轴顺序可以控制它们的显示顺序。如果一个组件的Z轴顺序较高，则它会覆盖在其他组件之上。
-            //在这里，将poker组件的Z轴顺序设置为0，确保它在容器中最底部。
+            //确保当前的牌置于最顶层
             container.setComponentZOrder(poker, 0);
-        }
+        });
 
         //排序
-        //其中this代表当前对象，playerList.get(i)代表获取列表playerList中索引为i的元素，i则代表当前循环的索引值。
-        for (int i = 0; i < 3; i++) {
-            order(playerList.get(i));
-            Common.rePosition(this,playerList.get(i),i);
-        }
+        playerList.stream()
+                .limit(3)
+                .forEach(player -> {
+                    order(player);
+                    Common.rePosition(this, player, playerList.indexOf(player));
+                });
     }
-    @Override
-    public void actionPerformed(ActionEvent e) {
-    }
+
     //设置界面
     public void initJframe() {
         //设置标题
@@ -129,6 +123,27 @@ public class GameJFrame extends JFrame implements ActionListener {
     }
 
     public void order(ArrayList<Poker> list) {
+        list.sort(Comparator.comparing(this::getValue)
+                .thenComparing(p ->
+                                Integer.parseInt(p.getName().substring(0, 1)),
+                                Comparator.reverseOrder()));
+    }
+
+
+    //获取每一张牌的价值
+    public int getValue(Poker poker) {
+        return Stream.of(poker.getName())
+                .map(name -> Integer.parseInt(name.substring(0, 1)) == 5 ? Integer.parseInt(name.substring(2)) + 100 :
+                        Integer.parseInt(name.substring(2)) == 1 ? Integer.parseInt(name.substring(2)) + 20 :
+                                Integer.parseInt(name.substring(2)) == 2 ? Integer.parseInt(name.substring(2)) + 30 :
+                                        Integer.parseInt(name.substring(2)))
+                .findFirst()
+                .orElse(0);
+    }
+}
+
+
+ /**   public void order(ArrayList<Poker> list) {
         //此处可以改为lambda表达式
         Collections.sort(list, new Comparator<Poker>() {
             @Override
@@ -191,4 +206,4 @@ public class GameJFrame extends JFrame implements ActionListener {
         //如果不是大小王，不是A，不是2，牌的价值就是牌对应的数字
         return value;
     }
-}
+  */
